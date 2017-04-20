@@ -15,9 +15,7 @@ object Simulator extends SimpleSwingApplication {
  
   
   val objectsText = Seq[String]("Mirror, straight (white)", "Mirror, concave (red)",  "Lens, concave (green)", "Lens, convex (blue)")
- // val objectsSeq = Seq[Reflective](new StraightMirror(this.angle.toInt), new ConcaveMirror(this.angle.toInt), new ConcaveLens(this.angle.toInt), new ConvexLens(this.angle.toInt)) 
   val objectsMap = scala.collection.mutable.Map[(Int, Int, Int, Int), Reflective]()
- // val lightsourcesMap = scala.collection.mutable.Map[(Int, Int), Reflective]()
   val lightsMap = scala.collection.mutable.Map[(Int, Int), Light]()
   val shines = scala.collection.mutable.Map[(Int, Int), Reflective]()
   def addShine(x: (Int,Int)) = shines += x -> Shine 
@@ -25,6 +23,7 @@ object Simulator extends SimpleSwingApplication {
   def objIndex = rolls % 4
   
   var angle = 0.0
+  
   def updInfo = {
     if (lighting == 1) info.text = "Placing lightsource at angle " + angle.toInt + "°." else if (lighting == 2) info.text = "Click anywhere to start simulation." else
     info.text = "Placing object of type: " + objectsText(objIndex) + " at angle " + angle.toInt + "°."
@@ -32,7 +31,8 @@ object Simulator extends SimpleSwingApplication {
   
   var lighting = 0
   var lights = 0
-  var started = false
+
+  
   val colors = Seq[Color](Color.white, Color.red, Color.green, Color.blue)
   def getColor(obj: Reflective): Color = {
       if (obj.isInstanceOf[StraightMirror]) return Color.white
@@ -44,12 +44,13 @@ object Simulator extends SimpleSwingApplication {
   val info = new Label
   updInfo
     
-  val sim = Array.ofDim[Reflective](1000,800)
+ // val sim = Array.ofDim[Reflective](1000,800)
   
   def top = new MainFrame {
     this.menuBar = new MenuBar {
       contents += new Menu("Start") {
         contents += new MenuItem(Action("Help"){help})
+        contents += new MenuItem(Action("Add random objects"){randomize})
         contents += new MenuItem(Action("Clear everything"){clear})
         contents += new MenuItem(Action("Clear lights"){clearLights})
         contents += new Separator
@@ -68,26 +69,26 @@ object Simulator extends SimpleSwingApplication {
   override def paintComponent(g: java.awt.Graphics2D) {
     super.paintComponent(g);
     if (mouseclicked) {
-      
       lighting match {
        
         case 1 => {
           val light = new Light(angle.toInt, (mouseX, mouseY))
-          sim(mouseX)(mouseY) = light
+         // sim(mouseX)(mouseY) = light
           lightsMap += ((mouseX, mouseY) -> light)
         }
         
         case 2 => {
           for (i <- lightsMap) {
-            i._2.advance
+            i._2.go
           }
         }
         
         case 0 => {
           placeObj(objIndex, (mouseX, mouseY))
-     
+           }
+        case 3 => {
+          lighting = 0 
         }
-        case 3 => lighting = 0 
       }   
          for(i <- objectsMap) {
       g.setColor(getColor(i._2))
@@ -105,7 +106,6 @@ object Simulator extends SimpleSwingApplication {
      
     }
     
- //   if (started) {    }
     
   }
       listenTo(mouse.clicks, keys)
@@ -135,7 +135,7 @@ object Simulator extends SimpleSwingApplication {
           info.repaint
         }
         case KeyPressed(_,Key.Key1,_,_) => {
-          angle = 100
+          angle = 90
           updInfo
           info.repaint
         }
@@ -155,9 +155,10 @@ object Simulator extends SimpleSwingApplication {
           info.repaint
         }
         case  KeyPressed(_,Key.G,_,_)  => {
-               lighting = 2
+                lighting = 2
                updInfo
                info.repaint
+               
         }
       }
     
@@ -187,6 +188,17 @@ object Simulator extends SimpleSwingApplication {
     mouseclicked = true
     repaint
   }
+  
+  def randomize = {
+    val rand = scala.util.Random
+    for(i <- 1 to 12) {
+      angle = rand.nextInt(360)
+      placeObj(rand.nextInt(4), (rand.nextInt(999), rand.nextInt(799)))
+      mouseclicked = true
+    }
+    repaint
+  
+  }
   }
   
   def help = {
@@ -201,15 +213,16 @@ object Simulator extends SimpleSwingApplication {
   
   
   def placeObj(objType: Int, coords: (Int, Int)) = {
-    val obj = objType match {
-      case 0 => new StraightMirror(this.angle.toInt)
-      case 1 => new ConcaveMirror(this.angle.toInt)
-      case 2 => new ConcaveLens(this.angle.toInt)
-      case 3 => new ConvexLens(this.angle.toInt)
-      }
     val ends = getEnd(coords._1, coords._2, angle.toInt)
-    sim(coords._1)(coords._2) = obj
-    sim(ends._1)(ends._2) = obj
+    val obj = objType match {
+      case 0 => new StraightMirror(this.angle.toInt, coords)
+      case 1 => new ConcaveMirror(this.angle.toInt, coords)
+      case 2 => new ConcaveLens(this.angle.toInt, coords)
+      case 3 => new ConvexLens(this.angle.toInt, coords)
+      }
+   
+ //   sim(coords._1)(coords._2) = obj
+  //  sim(ends._1)(ends._2) = obj
     objectsMap += ((coords._1, coords._2, ends._1, ends._2) -> obj)
   }
   
@@ -226,16 +239,5 @@ object Simulator extends SimpleSwingApplication {
   (endX.toInt, endY.toInt)
   }
   
-  /* Images
-  
-  def makeImg(fileName: String): BufferedImage = ImageIO.read(new File(fileName))
-		
-  
-  val m1 = makeImg("img/mconcave.png")
-  val m2 = makeImg("img/mstraight.png")
-  val l1 = makeImg("img/lconcave.png")
-  val l2 = makeImg("img/lconvex.png")
-  
-  */
   
 }

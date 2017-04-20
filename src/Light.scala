@@ -1,75 +1,61 @@
 import scala.math._
 
-class Light(val angle: Int, var location: (Int, Int)) extends Reflective(angle) {
-  def newAngle(x: Int) = this.angle 
-  lazy val obstacles = Simulator.objectsMap
-  private var bounces = 0
-  
-  def advance: Unit = {
-   val target = getEndLong(location._1, location._2, angle)
-   var reflected = false
-   var ended = false
-   var prevLocation = (0, 0)
-   if (target == location) {} else {
-   val path1 = bresenham(location._1, location._2, target._1, target._2) .toIterator
+class Light(var angle: Int, var location: (Int, Int)) {
    
-   val path2 = scala.collection.mutable.Set[(Int, Int)]()
+  def edge = this.location._1 < 1 || this.location._1 > 999 || this.location._2 < 1 || this.location._2 > 799
   
-   while (!reflected && !ended) {
-     if(!path1.hasNext) ended = true else {
-     val currentLocation = path1.next
-     val test = testReflection(currentLocation)
-     if (test.isDefined) {
+  
+   lazy val objects = {
+    val a = scala.collection.mutable.HashMap[(Int, Int), Reflective]()
+    for (i <- Simulator.objectsMap) {
+      val bres = bresenham(i._1._1, i._1._2, i._1._3, i._1._4)
+      for(j <- bres) {
+        a += j -> i._2
+        a += (min(999, j._1 + 1), j._2) -> i._2
+      }
+    }
+    a
+  }
+  
+  def go = this.advance(scala.collection.mutable.Set[(Int, Int)](), angle, 0)
+  
+  
+  def advance(path: scala.collection.mutable.Set[(Int, Int)], pathAngle: Int, bounces: Int): Unit = {
+    val target = getEndLong(location._1, location._2, pathAngle)
+  val p = scala.collection.mutable.Set[(Int, Int)]()
+  if (edge || bounces > 100) path.foreach(Simulator.addShine(_)) else {
+    val currentPath = bresenham(location._1, location._2, target._1, target._2) 
+    var stop = false
+    
+    while (!stop && currentPath.hasNext) {
+     val currentLocation = currentPath.next
+     val test = objects.get(currentLocation)
+     if (test.isDefined && p.size > 3) {
        val obj = test.get
-       reflected = true
-       
-       val newLight = new Light(obj.newAngle(angle), prevLocation)
-           newLight.advance
-        //   println(obj.angle)
-       
-      
-      // println(obj.getAngle)
+       stop = true 
+       obj.proximity = distance(obj.getInitial)
+      if(obj.getAngle != pathAngle) advance(p, obj.newAngle(pathAngle), bounces + 1)
      }
-     prevLocation = currentLocation
-     path2 += currentLocation
-      
-   }
-   }
-   path2.foreach(Simulator.addShine(_))
-   }
+     this.location = currentLocation
+     p += currentLocation
+    }
+    p.foreach(Simulator.addShine(_))
+  }
   }
    
-  
+  def distance(to: (Int, Int)):  Int = {
+   abs( sqrt(pow(location._1 - to._1, 2) + pow(location._2 - to._2, 2))) .toInt
+  }
  
    
  def getEndLong(x: Int, y: Int, a: Int): (Int, Int) = {
   
-  var endX = x + ((999) * cos(a.toRadians))
-  var endY = y + ((799) * sin(a.toRadians)) 
+  val endX = x + ((999) * cos(a.toRadians))
+  val endY = y + ((799) * sin(a.toRadians)) 
   
   (endX.toInt, endY.toInt)
   }
-  
-  def reflects(light: (Int, Int), ref: (Int, Int, Int, Int)): Boolean = {
-    val b = bresenham(ref._1, ref._2, ref._3, ref._4) .toSet
-    b.contains(light)
-   // Simulator.sim(ref._1)(ref._2)
-  }
-  
-  def testReflection(location: (Int, Int)): Option[Reflective] = {
-    
-    for (i <- obstacles) {
-      if ( reflects((location._1, location._2), (i._1._1, i._1._2, i._1._3, i._1._4)) ) return Option(i._2)
-    }
-    None
-  }
-  
-def element(light: (Int, Int), ref: (Int, Int, Int, Int)): Reflective = {
-    val b = bresenham(ref._1, ref._2, ref._3, ref._4) .toSet
-    b.contains(light)
-   Simulator.sim(ref._1)(ref._2)
-  }
-    
+ 
   
   def bresenham(x0: Int, y0: Int, x1: Int, y1: Int) = {
 

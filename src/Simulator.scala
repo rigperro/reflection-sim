@@ -30,7 +30,6 @@ object Simulator extends SimpleSwingApplication {
   }
   
   var lighting = 0
-  var lights = 0
 
   
   val colors = Seq[Color](Color.white, Color.red, Color.green, Color.blue)
@@ -43,16 +42,16 @@ object Simulator extends SimpleSwingApplication {
   }
   val info = new Label
   updInfo
-    
- // val sim = Array.ofDim[Reflective](1000,800)
+
   
   def top = new MainFrame {
     this.menuBar = new MenuBar {
       contents += new Menu("Start") {
         contents += new MenuItem(Action("Help"){help})
         contents += new MenuItem(Action("Add random objects"){randomize})
+        contents += new MenuItem(Action("Preset scenario: Escape"){preset})
         contents += new MenuItem(Action("Clear everything"){clear})
-        contents += new MenuItem(Action("Clear lights"){clearLights})
+      //contents += new MenuItem(Action("Clear lights"){clearLights})
         contents += new Separator
         contents += new MenuItem(Action("Quit") {dispose()})
       }
@@ -73,13 +72,13 @@ object Simulator extends SimpleSwingApplication {
        
         case 1 => {
           val light = new Light(angle.toInt, (mouseX, mouseY))
-         // sim(mouseX)(mouseY) = light
           lightsMap += ((mouseX, mouseY) -> light)
         }
         
         case 2 => {
+          
           for (i <- lightsMap) {
-            i._2.go
+            i._2.go            
           }
         }
         
@@ -87,8 +86,12 @@ object Simulator extends SimpleSwingApplication {
           placeObj(objIndex, (mouseX, mouseY))
            }
         case 3 => {
-          lighting = 0 
+        lightsMap.clear()
+        shines.clear()
+        lighting = 0
+        updInfo
         }
+        
       }   
          for(i <- objectsMap) {
       g.setColor(getColor(i._2))
@@ -99,7 +102,11 @@ object Simulator extends SimpleSwingApplication {
              g.setColor(Color.yellow)
              g.fillRect(i._1._1, i._1._2, 3, 3)
            }
+         if (lighting == 2) {
            for (i <- shines) g.fillRect(i._1._1, i._1._2, 3, 3)
+           lighting = 3
+           info.text = "Simulation finished, click anywhere to clear lights"
+         }
          }
           
       mouseclicked = false
@@ -140,12 +147,12 @@ object Simulator extends SimpleSwingApplication {
           info.repaint
         }
         case KeyPressed(_,Key.Key2,_,_) => {
-          angle = 200
+          angle = 180
           updInfo
           info.repaint
         }
         case KeyPressed(_,Key.Key3,_,_) => {
-          angle = 300
+          angle = 270
           updInfo
           info.repaint
         }
@@ -180,10 +187,6 @@ object Simulator extends SimpleSwingApplication {
     repaint
   }  
   def clearLights = {
-    lightsMap.clear()
-    shines.clear()
-    lighting = 0
-    updInfo
     lighting = 3
     mouseclicked = true
     repaint
@@ -194,15 +197,55 @@ object Simulator extends SimpleSwingApplication {
     for(i <- 1 to 12) {
       angle = rand.nextInt(360)
       placeObj(rand.nextInt(4), (rand.nextInt(999), rand.nextInt(799)))
-      mouseclicked = true
     }
+    mouseclicked = true
     repaint
-  
   }
+  
+  def preset = {
+    angle = 0
+    val start = (10, 10)
+    placeObj(0, start)
+    var end = getEnd(10, 10, 0)
+  for(i <- 1 to 8) {
+    placeObj(0, end)
+    end = getEnd(end._1, end._2, 0)
+  }
+    angle = 90
+    for(i <- 1 to 7) {
+      placeObj(0, end)
+      end = getEnd(end._1, end._2, 90)
+    }
+    angle = 180
+    for(i <- 1 to 8) {
+      placeObj(0, end)
+      end = getEnd(end._1, end._2, 180)
+    }
+    angle = 270
+    for(i <- 1 to 6) {
+      placeObj(0, end)
+      end = getEnd(end._1, end._2, 270)
+    }
+    angle = 0
+    for(i <- 1 to 7) {
+      placeObj(0, end)
+      end = getEnd(end._1, end._2, 0)
+    }
+    angle = 90
+    for(i <- 1 to 5) {
+      placeObj(0, end)
+      end = getEnd(end._1, end._2, 90)
+    }
+
+    
+    mouseclicked = true
+    repaint
+  }
+  
   }
   
   def help = {
-    Dialog.showMessage(new BoxPanel(Orientation.Vertical), "Help text", title = "Help")
+    Dialog.showMessage(new BoxPanel(Orientation.Vertical), "Welcome to reflections!\n\nPlace reflective objects and atleast one lightsource and start simulation!\nAngle is considered here as a direction from the location of your mouse.\n0: right, 90: down, 180: left, 270: up\n\nKeys:\nZ: cycle through object types\nX: cycle through angles\n0, 1, 2, 3: shortcut to angles 0, 90, 180, 270, respectively\nL: lightsource placement mode\nG: start simulation", title = "Help")
   }
   
   
@@ -220,9 +263,7 @@ object Simulator extends SimpleSwingApplication {
       case 2 => new ConcaveLens(this.angle.toInt, coords)
       case 3 => new ConvexLens(this.angle.toInt, coords)
       }
-   
- //   sim(coords._1)(coords._2) = obj
-  //  sim(ends._1)(ends._2) = obj
+
     objectsMap += ((coords._1, coords._2, ends._1, ends._2) -> obj)
   }
   

@@ -13,6 +13,7 @@ import scala.math._
 
 object Simulator extends SimpleSwingApplication {
  
+  UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
   
   val objectsText = Seq[String]("Mirror, straight (white)", "Mirror, concave (red)",  "Lens, concave (green)", "Lens, convex (blue)")
   val objectsMap = scala.collection.mutable.Map[(Int, Int, Int, Int), Reflective]()
@@ -23,6 +24,8 @@ object Simulator extends SimpleSwingApplication {
   def objIndex = rolls % 4
   
   var angle = 0.0
+  
+  var automated = false
   
   def updInfo = {
     if (lighting == 1) info.text = "Placing lightsource at angle " + angle.toInt + "°." else if (lighting == 2) info.text = "Click anywhere to start simulation." else
@@ -49,7 +52,7 @@ object Simulator extends SimpleSwingApplication {
       contents += new Menu("Start") {
         contents += new MenuItem(Action("Help"){help})
         contents += new MenuItem(Action("Add random objects"){randomize})
-        contents += new MenuItem(Action("Preset scenario: Escape"){preset})
+        contents += new MenuItem(Action("Preset scenario: Box"){preset})
         contents += new MenuItem(Action("Clear everything"){clear})
       //contents += new MenuItem(Action("Clear lights"){clearLights})
         contents += new Separator
@@ -83,7 +86,7 @@ object Simulator extends SimpleSwingApplication {
         }
         
         case 0 => {
-          placeObj(objIndex, (mouseX, mouseY))
+         if (!automated) placeObj(objIndex, (mouseX, mouseY))
            }
         case 3 => {
         lightsMap.clear()
@@ -108,7 +111,7 @@ object Simulator extends SimpleSwingApplication {
            info.text = "Simulation finished, click anywhere to clear lights"
          }
          }
-          
+        automated = false  
       mouseclicked = false
      
     }
@@ -167,6 +170,9 @@ object Simulator extends SimpleSwingApplication {
                info.repaint
                
         }
+        case KeyPressed(_,Key.R,_,_) => {
+          randomize
+        }
       }
     
       focusable = true
@@ -198,8 +204,10 @@ object Simulator extends SimpleSwingApplication {
       angle = rand.nextInt(360)
       placeObj(rand.nextInt(4), (rand.nextInt(999), rand.nextInt(799)))
     }
+    automated = true
     mouseclicked = true
     repaint
+    automated = false
   }
   
   def preset = {
@@ -237,7 +245,7 @@ object Simulator extends SimpleSwingApplication {
       end = getEnd(end._1, end._2, 90)
     }
 
-    
+    automated = true    
     mouseclicked = true
     repaint
   }

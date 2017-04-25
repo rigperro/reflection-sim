@@ -1,7 +1,7 @@
 import scala.math._
 
 class Light(var angle: Int, var location: (Int, Int)) {
-   
+   // check if near the edge of the window
   def edge = this.location._1 < 1 || this.location._1 > 999 || this.location._2 < 1 || this.location._2 > 799
   
   
@@ -16,17 +16,16 @@ class Light(var angle: Int, var location: (Int, Int)) {
     }
     a
   }
-  
+  //called from Simulator, starts the advance chain
   def go = this.advance(scala.collection.mutable.Set[(Int, Int)](), angle, 0)
   
-  
+  //recursive method to draw the path of the light
   def advance(path: scala.collection.mutable.Set[(Int, Int)], pathAngle: Int, bounces: Int): Unit = {
     val target = getEndLong(location._1, location._2, pathAngle)
   val p = scala.collection.mutable.Set[(Int, Int)]()
   if (edge || bounces > 100) path.foreach(Simulator.addShine(_)) else {
     val currentPath = bresenham(location._1, location._2, target._1, target._2) 
-    var stop = false
-    
+    var stop = false 
     while (!stop && currentPath.hasNext) {
      val currentLocation = currentPath.next
      val test = objects.get(currentLocation)
@@ -42,12 +41,12 @@ class Light(var angle: Int, var location: (Int, Int)) {
     p.foreach(Simulator.addShine(_))
   }
   }
-   
+   //counts the distance from current location of the light to another point
   def distance(to: (Int, Int)):  Int = {
-   abs( sqrt(pow(location._1 - to._1, 2) + pow(location._2 - to._2, 2))) .toInt
+   sqrt(pow(location._1 - to._1, 2) + pow(location._2 - to._2, 2)) .toInt
   }
  
-   
+   //counts the target point in given angle a and location x, y 
  def getEndLong(x: Int, y: Int, a: Int): (Int, Int) = {
   
   val endX = x + ((999) * cos(a.toRadians))
@@ -56,15 +55,12 @@ class Light(var angle: Int, var location: (Int, Int)) {
   (endX.toInt, endY.toInt)
   }
  
-  
+  //creates an iterator containing all the coordinate points between x0,y0
   def bresenham(x0: Int, y0: Int, x1: Int, y1: Int) = {
-
     val dx = abs(x1 - x0)
     val dy = abs(y1 - y0)
-
     val sx = if (x0 < x1) 1 else -1
     val sy = if (y0 < y1) 1 else -1
-
     new Iterator[(Int, Int)] {
       var (x, y) = (x0, y0)
       var err = dx - dy
